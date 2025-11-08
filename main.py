@@ -1,66 +1,46 @@
-from test.dorf import sigma
 from pymupdf4llm import to_markdown
-from requests import *
-from argparse import *
-from pathlib import *
-from time import *
+import asyncio
+import requests as R
+import argparse as A
+import pathlib  as P
+import time     as T
+import utility  as U
+import terminalUI
 
+"""
+TODO 
+- figure out how many files the user wants to convert and generate summaries for
+- create that many tasks for converting to markdown
+- create that many tasks for sending the response to the model
+- create that many tasks for writing to the output file
+
+given by user everytime
+    - List of file to summarise
+    - Output directory
+Same file names
+
+"""
 
 INPUT_FILE_HELP     = 'this is the input file parameter for this cli utility'
 OUTPUT_FILE_HELP    = 'this is the output file parameter for this cli utility' 
 TOKEN_HELP          = 'this is the token parameter for this cli utility'
 TEMP_HELP           = 'this is the temperature (creativity) parameter for this cli utility'
 
-summarize_endpoint  = 'https://summarizer.blindy.net/summarize'
-model_response_bad  = 'response from the model was absolutely cooked'
-model_response_what = 'response from the model was erroneous and maddening'
-
-
-def send_md_to_model(md: str, tokens: int, temp: float) -> Response:
-    response = post(summarize_endpoint, json={
-        "input": md,
-        "max_tokens": tokens,
-        "temperature": temp
-    })
-
-    print(response.headers)
-    print(response.status_code)
-    print(response.text)
-    # print(response)
-
-    if (response.status_code - 200 > 100):
-        raise Exception(model_response_bad)
-    if (response.status_code - 200 < 0):
-        raise Exception(model_response_what)
-
-    print(response.text)
-
-    return response
-
-def write_model_response(path: str, response: Response):
-    Path(path).write_bytes(response.text.encode())
-
-def main(**kwargs):
-    start = time()
-    md = to_markdown(kwargs['file'])
-    end = time()
-    print(f'parse time: {end - start}')
+async def main(**kwargs):
+    tokens = kwargs['mrts'] 
+    temp = kwargs['temp']
     
-    start = time() 
-    model_response = send_md_to_model(md)
-    end = time()
-    print(f'model generation time: {start - end}')
+    md = asyncio.create_task(U.to_markdown_async(kwargs['file']))
+    md_result = await md
     
-    start = time()
-    write_model_response(kwargs['ofile'], model_response)
-    end = time()
-    print(f'write time: {start - end}')
-
-    # Path(kwargs['ofile']).write_bytes(md.encode())
-
-
+    model_response = asyncio.create_task(U.send_md_to_model(md_result, tokens, temp))
+    model_response_result = await model_response
+    
+    file_write = asyncio.create_task(U.write_model_response(kwargs['ofile'], model_response_result))
+    file_write_result = await file_write
+    
 if __name__ == '__main__':
-    args = ArgumentParser('')
+    args = A.ArgumentParser('')
 
     args.add_argument('--file',
                     type=str,
@@ -82,5 +62,8 @@ if __name__ == '__main__':
                     help=TEMP_HELP)
 
     pargs = args.parse_args()
+    
+    tui = terminalUI.SummarizerApp(**(vars(pargs)))
+    tui.run()
 
-    main(**(vars(pargs)))
+    # asyncio.run(main(**(vars(pargs))))
