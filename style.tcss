@@ -1,0 +1,25 @@
+.box {
+    content-align: center middle;
+    border: solid green;
+    color: green;
+}
+
+CompletionScreen {
+    align: center middle
+}
+
+Button {
+    width: 100%;
+}
+
+#dialog {
+    grid-size: 3;
+    grid-gutter: 1 2;
+    grid-rows: 1fr 3;
+    padding: 0 1;
+    width: 100;
+    height: 11;
+    border: thick $background 80%;
+    background: $surface;
+    border: solid green;
+}
