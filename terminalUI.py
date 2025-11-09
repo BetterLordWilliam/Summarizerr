@@ -13,6 +13,7 @@ import time
 
 file: str = None
 odir: str = None
+api_key: str = None
 mrts: int = 4096
 temp: float = 0.5
 md_content: str = None
@@ -57,7 +58,7 @@ class CompletionScreen(Screen):
 
     @on(Button.Pressed, "#local")
     def handle_local(self) -> None:
-        self.app.switch_screen(MarkdownViewerScreen())
+        self.app.switch_screen('mdviewer')
 
     @on(Button.Pressed, "#cancel")
     def handle_cancel(self) -> None:
@@ -126,7 +127,7 @@ class RunnerMenu(Screen):
             self.query_one(ProgressBar).update(total=100, progress=100)
             self.notify(f'finished writing the models response to disk {end - start}')
             
-            self.app.push_screen(CompletionScreen())
+            self.app.push_screen('completion')
         except Exception as e:
             self.notify(f'Error occured during pdf processing, {e}')
             self.app.pop_screen()
@@ -147,24 +148,29 @@ class SummarizerApp(App[None]):
     """
 
     CSS_PATH = "style.tcss"
+    
+    
 
     BINDINGS = [
         Binding(key="q", action="exit", description="Quit the app"),
         # Binding(key="c", action="confirm", description="Confirm choices")
+        Binding(key='b', action='back', description='Go back to the starting page')
     ]
 
     progress_timer: Timer
     
-    def __init__(self, filee: str, ofilee: str, mrts: int, temp: float, *args, **kwargs):
+    def __init__(self, filee: str, ofilee: str, mrts: int, temp: float, api_keyy: str, *args, **kwargs):
         """
         Instances the global variables.
         """
         super().__init__(*args, **kwargs)
         global file
         global odir
+        global api_key
         
         file = filee or None
         odir = ofilee or None
+        api_key = api_keyy or None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -183,9 +189,12 @@ class SummarizerApp(App[None]):
                 )
         yield Footer()
 
-    @on(Button.Pressed, "#quit")
     def action_exit(self) -> None: 
         self.exit()
+        
+    def action_back(self) -> None:
+        self.notify('Wassup')
+        pass
         
     @on(Button.Pressed, '#confirm')
     def confirm(self) -> None:
@@ -201,7 +210,7 @@ class SummarizerApp(App[None]):
             good = False
         if (good):
             self.notify(f'{file}\n{odir}')
-            self.push_screen(RunnerMenu())
+            self.push_screen('runner')
     
     @work 
     @on(Button.Pressed, '#ifile')
@@ -224,6 +233,10 @@ class SummarizerApp(App[None]):
     def on_mount(self) -> None:
         global file
         global odir 
+        
+        self.install_screen(RunnerMenu(), name='runner')
+        self.install_screen(CompletionScreen(), name='completion')
+        self.install_screen(MarkdownViewerScreen(), name='mdviewer')
         
         self.title = "Summarizerr"
         self.sub_title = "Summarize your lectures"

@@ -43,11 +43,11 @@ API_KEY_HELP        = 'this is the api key provided by the obsidian local REST A
 if __name__ == '__main__':
     args = A.ArgumentParser('')
 
-    args.add_argument('--filee',
+    args.add_argument('--file',
                     type=str,
                     required=False,
                     help=INPUT_FILE_HELP)
-    args.add_argument('--ofilee',
+    args.add_argument('--odir',
                     type=str,
                     required=False,
                     help=OUTPUT_FILE_HELP)
@@ -61,15 +61,20 @@ if __name__ == '__main__':
                     default=0.5,
                     required=False,
                     help=TEMP_HELP)
-    
-    # args.add_argument('--api',
-    #                 type=str,
-    #                 required=False,
-    #                 help=API_KEY_HELP)
+    args.add_argument('--api',
+                    type=str,
+                    required=False,
+                    help=API_KEY_HELP)
 
     pargs = args.parse_args()
     
-    tui = terminalUI.SummarizerApp(**(vars(pargs)))
+    tui = terminalUI.SummarizerApp(
+        filee       = pargs.file,
+        ofilee      = pargs.odir,
+        mrts        = pargs.mrts,
+        temp        = pargs.temp,
+        api_keyy    = pargs.api 
+    )
     tui.run()
 
     # asyncio.run(main(**(vars(pargs))))
