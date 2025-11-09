@@ -2,7 +2,7 @@ from textual import on, work
 from textual_fspicker import FileOpen, SelectDirectory
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll, Center, Middle, Grid, Container
-from textual.screen import Screen
+from textual.screen import Screen, ModalScreen
 from textual.binding import Binding
 from textual.timer import Timer
 from textual.widgets import Header, Footer, MarkdownViewer, Button, Static, ProgressBar, Label, Input, Rule
@@ -23,6 +23,10 @@ class MarkdownViewerScreen(Screen):
     # BINDING = [
     #     Binding(key="o", action="obsidian", description="Open obsidian")
     # ]
+    
+    BINDINGS = [
+        Binding(key='escape', action='app.pop_screen()', description='Pop screen')
+    ]
 
     def markdown_viewer(self): 
         global md_content 
@@ -37,20 +41,20 @@ class MarkdownViewerScreen(Screen):
         yield markdown_viewer
         yield Footer()
 
-class CompletionScreen(Screen):
+class CompletionScreen(ModalScreen):
     """
     A textual component that displays a screen on terminal. Includes buttons to open MD on screen or to upload it to obsidian endpoint.
     """
     
+    BINDINGS = [
+        Binding(key='escape', action='app.pop_screen()', description='Pop screen')
+    ]
+    
     def compose(self) -> ComposeResult: 
-        yield Container(
-            Label("Completed!"),
-            Horizontal(
-                Button("Obsidian", variant="primary", id="obsidian"),
-                Button("Preview Local", variant="primary", id="local"),
-                Button("Cancel", variant="primary", id="cancel"),
-            ),
-        )
+        yield Label("Completed!")
+        yield Button("Obsidian", variant="primary", id="obsidian")
+        yield Button("Preview Local", variant="primary", id="local")
+        yield Button("Cancel", variant="primary", id="cancel")
     
     @on(Button.Pressed, "#obsidian")
     def handle_obsidian(self) -> None:
@@ -58,15 +62,19 @@ class CompletionScreen(Screen):
 
     @on(Button.Pressed, "#local")
     def handle_local(self) -> None:
-        self.app.switch_screen('mdviewer')
+        self.app.pop_screen()
+        self.app.push_screen(MarkdownViewerScreen())
 
     @on(Button.Pressed, "#cancel")
     def handle_cancel(self) -> None:
         self.app.pop_screen()
-        self.app.pop_screen()
-
 
 class RunnerMenu(Screen):
+    
+    BINDINGS = [
+        Binding(key='escape', action='app.pop_screen()', description='Pop screen')
+    ]
+    
     def compose(self) -> ComposeResult:
         yield Header()
         with Center(): 
@@ -127,18 +135,21 @@ class RunnerMenu(Screen):
             self.query_one(ProgressBar).update(total=100, progress=100)
             self.notify(f'finished writing the models response to disk {end - start}')
             
-            self.app.push_screen('completion')
+            self.app.pop_screen() 
+            self.app.push_screen(CompletionScreen())
+            
         except Exception as e:
             self.notify(f'Error occured during pdf processing, {e}')
             self.app.pop_screen()
         
-    def on_mount(self) -> None:        
+    def on_mount(self):        
         if (file is not None):
             self.query_one('#inputfile').update(str(file))
         if (odir is not None):
             self.query_one('#outputdir').update(str(odir))
-
+            
         self.run_worker(self.do_the_thing)
+
 
 
 class SummarizerApp(App[None]):
@@ -154,7 +165,6 @@ class SummarizerApp(App[None]):
     BINDINGS = [
         Binding(key="q", action="exit", description="Quit the app"),
         # Binding(key="c", action="confirm", description="Confirm choices")
-        Binding(key='b', action='back', description='Go back to the starting page')
     ]
 
     progress_timer: Timer
@@ -210,7 +220,7 @@ class SummarizerApp(App[None]):
             good = False
         if (good):
             self.notify(f'{file}\n{odir}')
-            self.push_screen('runner')
+            self.push_screen(RunnerMenu())
     
     @work 
     @on(Button.Pressed, '#ifile')
@@ -233,10 +243,6 @@ class SummarizerApp(App[None]):
     def on_mount(self) -> None:
         global file
         global odir 
-        
-        self.install_screen(RunnerMenu(), name='runner')
-        self.install_screen(CompletionScreen(), name='completion')
-        self.install_screen(MarkdownViewerScreen(), name='mdviewer')
         
         self.title = "Summarizerr"
         self.sub_title = "Summarize your lectures"
