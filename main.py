@@ -61,10 +61,10 @@ if __name__ == '__main__':
                     default=0.5,
                     required=False,
                     help=TEMP_HELP)
-    args.add_argument('--api',
-                    type=str,
-                    required=False,
-                    help=API_KEY_HELP)
+    # args.add_argument('--api',
+    #                 type=str,
+    #                 required=False,
+    #                 help=API_KEY_HELP)
 
     pargs = args.parse_args()
     
