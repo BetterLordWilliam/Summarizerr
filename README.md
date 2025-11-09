@@ -10,6 +10,13 @@ Additionally you can play a cool fishing game while the model cooks
 
 Your welcome!
 
+## Team
+
+Bryson Lindy
+Phyo Kha
+Richard Ho
+Will Otterbien
+
 # Technology
 
 | Languages | Infrastructure |
