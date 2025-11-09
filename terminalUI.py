@@ -11,19 +11,6 @@ import utility
 import time
 
 
-# async def main(**kwargs):
-#     tokens = kwargs['mrts'] 
-#     temp = kwargs['temp']
-    
-#     md = asyncio.create_task(U.to_markdown_async(kwargs['file']))
-#     md_result = await md
-    
-#     model_response = asyncio.create_task(U.send_md_to_model(md_result, tokens, temp))
-#     model_response_result = await model_response
-    
-#     file_write = asyncio.create_task(U.write_model_response(kwargs['ofile'], model_response_result))
-#     file_write_result = await file_write   
-
 file: str = None
 odir: str = None
 mrts: int = 4096
