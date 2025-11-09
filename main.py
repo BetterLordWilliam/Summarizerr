@@ -4,14 +4,17 @@ from requests import *
 from argparse import *
 from pathlib import *
 from time import *
+from obsidianify import push_to_obsidian
 
 
 INPUT_FILE_HELP     = 'this is the input file parameter for this cli utility'
 OUTPUT_FILE_HELP    = 'this is the output file parameter for this cli utility' 
 TOKEN_HELP          = 'this is the token parameter for this cli utility'
 TEMP_HELP           = 'this is the temperature (creativity) parameter for this cli utility'
+API_KEY_HELP        = 'this is the api key provided by the obsidian local REST API plugin'
 
-summarize_endpoint  = 'https://summarizer.blindy.net/summarize'
+# summarize_endpoint  = 'https://summarizer.blindy.net/summarize'
+summarize_endpoint  = 'http://localhost:8000/summarize'
 model_response_bad  = 'response from the model was absolutely cooked'
 model_response_what = 'response from the model was erroneous and maddening'
 
@@ -38,7 +41,8 @@ def send_md_to_model(md: str, tokens: int, temp: float) -> Response:
     return response
 
 def write_model_response(path: str, response: Response):
-    Path(path).write_bytes(response.text.encode())
+    summary = response.json()['summary']
+    Path(path).write_text(summary, encoding='utf-8')
 
 def main(**kwargs):
     start = time()
@@ -47,7 +51,7 @@ def main(**kwargs):
     print(f'parse time: {end - start}')
     
     start = time() 
-    model_response = send_md_to_model(md)
+    model_response = send_md_to_model(md, kwargs.get('mrts', 4096), kwargs.get('temp', 0.5))
     end = time()
     print(f'model generation time: {start - end}')
     
@@ -55,6 +59,18 @@ def main(**kwargs):
     write_model_response(kwargs['ofile'], model_response)
     end = time()
     print(f'write time: {start - end}')
+
+    api_key = kwargs.get('api')
+    if api_key:
+        print('\npushing to obsidian because api key passed')
+        try:
+            filename = Path(kwargs['file']).stem
+            summary = model_response.json()['summary']
+            result = push_to_obsidian(summary, api_key, filename)
+            print(f'obsidianified successfully {result}')
+        except Exception as err:
+            print(f'failed to obsidianify: {err}')
+        
 
     # Path(kwargs['ofile']).write_bytes(md.encode())
 
@@ -72,14 +88,18 @@ if __name__ == '__main__':
                     help=OUTPUT_FILE_HELP)
     args.add_argument('--mrts',
                     type=int,
-                    default=4096,
+                    default=32768,
                     required=False,
                     help=TOKEN_HELP)
     args.add_argument('--temp',
                     type=float,
-                    default=0.5,
+                    default=0.1,
                     required=False,
                     help=TEMP_HELP)
+    args.add_argument('--api',
+                    type=str,
+                    required=False,
+                    help=API_KEY_HELP)
 
     pargs = args.parse_args()
 
