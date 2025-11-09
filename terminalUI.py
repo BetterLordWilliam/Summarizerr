@@ -167,16 +167,15 @@ class RunnerMenu(Screen):
                     win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
                     1, 65536, 65536, 0, None
                 )
-                win32pipe.ConnectNamedPipe(pipe, None)
             except pywintypes.error as e:
                 self.notify(f'we failed to open the pipe, lost control {e}')
                 return
             
             cmd = f'start "Fisherman Game" cmd /c ".\\fisherman.exe --pipe {pipe_name}"' 
             subprocess.Popen(cmd, shell=True)
-        else:
+            win32pipe.ConnectNamedPipe(pipe, None)
+        else: 
             pipe_path = '/tmp/fisherman_pipe'
-        
             try:
                 if os.path.exists(pipe_path):
                     os.remove(pipe_path)
@@ -234,7 +233,6 @@ class RunnerMenu(Screen):
             else:
                 pipe.write(message)
                 pipe.flush()
-                pass
             
         except Exception as e:
             self.notify(f'Error occured during pdf processing, {e}')
@@ -248,8 +246,6 @@ class RunnerMenu(Screen):
             else: 
                 pipe.write(message)
                 pipe.flush()
-                pass
-        
         
     def on_mount(self):        
         if (file is not None):
@@ -264,7 +260,7 @@ class StartMenu(Screen):
         Binding(key="i", action="open_ifile", description="Open source file"),
         Binding(key="o", action="open_output_directory", description="Open target"),
         Binding(key="s", action="start_conversion", description="Start conversion")
-    ] 
+    ]
     
     def compose(self) -> ComposeResult:
         yield Header()

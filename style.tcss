@@ -39,6 +39,7 @@ CompletionScreen {
 #right_column {
     content-align: center middle;
     padding: 1;
+    border: solid green;
 }
 
 #ascii_art {
