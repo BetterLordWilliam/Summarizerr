@@ -38,7 +38,6 @@ async def send_md_to_model(md: str, tokens: int, temp: float) -> dict:
             return await resp.json()
 
 async def write_model_response(path: str, response: dict):
-    
     P.Path(path).write_bytes(response['summary'].encode())
     # Path(kwargs['ofile']).write_bytes(md.encode())
 

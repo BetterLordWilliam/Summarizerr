@@ -44,11 +44,11 @@ if __name__ == '__main__':
 
     args.add_argument('--file',
                     type=str,
-                    required=True,
+                    required=False,
                     help=INPUT_FILE_HELP)
     args.add_argument('--ofile',
                     type=str,
-                    required=True,
+                    required=False,
                     help=OUTPUT_FILE_HELP)
     args.add_argument('--mrts',
                     type=int,
