@@ -25,19 +25,20 @@ INPUT_FILE_HELP     = 'this is the input file parameter for this cli utility'
 OUTPUT_FILE_HELP    = 'this is the output file parameter for this cli utility' 
 TOKEN_HELP          = 'this is the token parameter for this cli utility'
 TEMP_HELP           = 'this is the temperature (creativity) parameter for this cli utility'
+API_KEY_HELP        = 'this is the api key provided by the obsidian local REST API plugin'
 
-async def main(**kwargs):
-    tokens = kwargs['mrts'] 
-    temp = kwargs['temp']
+# async def main(**kwargs):
+#     tokens = kwargs['mrts'] 
+#     temp = kwargs['temp']
     
-    md = asyncio.create_task(U.to_markdown_async(kwargs['file']))
-    md_result = await md
+#     md = asyncio.create_task(U.to_markdown_async(kwargs['file']))
+#     md_result = await md
     
-    model_response = asyncio.create_task(U.send_md_to_model(md_result, tokens, temp))
-    model_response_result = await model_response
+#     model_response = asyncio.create_task(U.send_md_to_model(md_result, tokens, temp))
+#     model_response_result = await model_response
     
-    file_write = asyncio.create_task(U.write_model_response(kwargs['ofile'], model_response_result))
-    file_write_result = await file_write
+#     file_write = asyncio.create_task(U.write_model_response(kwargs['ofile'], model_response_result))
+#     file_write_result = await file_write
     
 if __name__ == '__main__':
     args = A.ArgumentParser('')
@@ -60,6 +61,10 @@ if __name__ == '__main__':
                     default=0.5,
                     required=False,
                     help=TEMP_HELP)
+    args.add_argument('--api',
+                    type=str,
+                    required=False,
+                    help=API_KEY_HELP)
 
     pargs = args.parse_args()
     
