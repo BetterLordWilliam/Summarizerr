@@ -109,34 +109,39 @@ class RunnerMenu(Screen):
         yield Footer()
     
     async def do_the_thing(self) -> None:
-        self.notify(self._file)
-        self.notify(self._odir)
+        try:
+            self.notify(self._file)
+            self.notify(self._odir)
+            
+            self.notify('we are now converting from a pdf') 
+            start = time.time()
+            md = asyncio.create_task(utility.to_markdown_async(self._file))
+            md_result = await md
+            end = time.time()
+            self.query_one(ProgressBar).update(total=100, progress=100)
+            self.notify(f'finished converting from pdf, {end - start}s')
+            
+            self.notify('we are now sending the converted pdf to epic model') 
+            start = time.time()
+            model_response = asyncio.create_task(utility.send_md_to_model(md_result, 1024, 0.))
+            model_response_result = await model_response
+            end = time.time()
+            self.query_one(ProgressBar).update(total=100, progress=100)
+            self.notify(f'finished getting response from model {end - start}s')
+            
+            self.notify('we are now saving the models response') 
+            start = time.time()
+            file_write = asyncio.create_task(utility.write_model_response(self._file, self._odir, model_response_result['summary']))
+            file_write_result = await file_write
+            end = time.time()
+            self.query_one(ProgressBar).update(total=100, progress=100)
+            self.notify(f'finished writing the models response to disk {end - start}')
+            
+            self.app.push_screen(CompletionScreen(md_content = model_response_result['summary']))
+        except Exception as e:
+            self.notify(f'Error occured during pdf processing, {e}')
+            self.app.pop_screen()
         
-        self.notify('we are now converting from a pdf') 
-        start = time.time()
-        md = asyncio.create_task(utility.to_markdown_async(self._file))
-        md_result = await md
-        end = time.time()
-        self.query_one(ProgressBar).update(total=100, progress=100)
-        self.notify(f'finished converting from pdf, {end - start}s')
-        
-        self.notify('we are now sending the converted pdf to epic model') 
-        start = time.time()
-        model_response = asyncio.create_task(utility.send_md_to_model(md_result, 1024, 0.))
-        model_response_result = await model_response
-        end = time.time()
-        self.notify(f'finished getting response from model {end - start}s')
-        
-        self.notify('we are now saving the models response') 
-        start = time.time()
-        file_write = asyncio.create_task(utility.write_model_response(self._file, self._odir, model_response_result['summary']))
-        file_write_result = await file_write
-        end = time.time()
-        self.notify(f'finished writing the models response to disk {end - start}')
-        
-        self.app.push_screen(CompletionScreen(md_content = model_response_result['summary']))
-        
-    
     def on_mount(self) -> None:        
         if (self._file is not None):
             self.query_one('#inputfile').update(str(self._file))
