@@ -50,4 +50,36 @@ CompletionScreen {
 #ascii_art {
     content-align: center middle;
     color: green;
+    padding: 2;
+}
+
+#dialog {
+    width: 50%;
+    height: 30%;
+    padding: 1 2;
+    background: $surface;
+    border: thick $background 80%;
+
+    layout: grid;
+    grid-size: 3;
+    grid-rows: 1fr 3;
+    grid-gutter: 1 2;
+}
+
+#dialog > Label {
+    column-span: 3;
+    width: 100%;
+    content-align: center middle;
+}
+
+#dialog > Button {
+    width: 100%
+}
+
+#apiBro {
+    width: 150;
+}
+
+#apiSis {
+    width: 150;
 }
