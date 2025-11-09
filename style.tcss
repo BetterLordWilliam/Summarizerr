@@ -51,3 +51,11 @@ CompletionScreen {
     content-align: center middle;
     color: green;
 }
+
+#apiBro {
+    width: 100%
+}
+
+#apiSis {
+    width: 100%
+}
