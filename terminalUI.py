@@ -12,12 +12,15 @@ import utility
 import time
 import obsidianify
 import os
+import sys
 import pathlib
 import subprocess
 import tempfile
-import win32pipe
-import win32file
-import pywintypes
+
+if (sys.platform == 'win32'):
+    import win32pipe
+    import win32file
+    import pywintypes
 
 file: str = None
 odir: str = None
@@ -155,25 +158,43 @@ class RunnerMenu(Screen):
         global odir 
         global md_content
         
-        pipe_name = r'\\.\pipe\fisherman_signals'
-        
-        try:
-            pipe = win32pipe.CreateNamedPipe(
-                pipe_name,
-                win32pipe.PIPE_ACCESS_DUPLEX,
-                win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-                1, 65536, 65536, 0, None
-            )
-        except pywintypes.error as e:
-            self.notify(f'we failed to open the pipe, lost control {e}')
-            return
-        
-        cmd = f'start "Fisherman Game" cmd /c ".\\fisherman.exe --pipe {pipe_name}"' 
-        subprocess.Popen(cmd, shell=True)
-        
-        try:
-            win32pipe.ConnectNamedPipe(pipe, None) 
+        if (sys.platform == "win32"):
+            pipe_name = r'\\.\pipe\fisherman_signals'
+            try:
+                pipe = win32pipe.CreateNamedPipe(
+                    pipe_name,
+                    win32pipe.PIPE_ACCESS_DUPLEX,
+                    win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
+                    1, 65536, 65536, 0, None
+                )
+                win32pipe.ConnectNamedPipe(pipe, None)
+            except pywintypes.error as e:
+                self.notify(f'we failed to open the pipe, lost control {e}')
+                return
             
+            cmd = f'start "Fisherman Game" cmd /c ".\\fisherman.exe --pipe {pipe_name}"' 
+            subprocess.Popen(cmd, shell=True)
+        else:
+            pipe_path = '/tmp/fisherman_pipe'
+        
+            try:
+                if os.path.exists(pipe_path):
+                    os.remove(pipe_path)
+                
+                os.mkfifo(pipe_path)
+                print(f"Created named pipe: {pipe_path}")
+                print()
+                
+                subprocess.Popen([
+                    'x-terminal-emulator', '-e',
+                    'fisherman', '--pipe', pipe_path
+                ])
+                
+                pipe = open(pipe_path, 'w')
+            except Exception as e:
+                self.notify(f'we failed to open the pipe, lost control {e}')
+        
+        try:
             self.notify(file)
             self.notify(odir)
             
@@ -206,16 +227,29 @@ class RunnerMenu(Screen):
             self.app.push_screen(CompletionScreen())
             
             message = "SUCCESS:Great job! 🔥🔥🔥🔥\n"
-            win32file.WriteFile(pipe, message.encode())
-            win32file.CloseHandle(pipe) 
+            
+            if (sys.platform == "win32"):
+                win32file.WriteFile(pipe, message.encode())
+                win32file.CloseHandle(pipe)
+            else:
+                pipe.write(message)
+                pipe.flush()
+                pass
             
         except Exception as e:
             self.notify(f'Error occured during pdf processing, {e}')
             self.app.pop_screen()
-            
+
             message = "FAILURE:Try again! 💀💀💀💀\n"
-            win32file.WriteFile(pipe, message.encode())
-            win32file.CloseHandle(pipe) 
+            
+            if (sys.platform == "win32"):
+                win32file.WriteFile(pipe, message.encode())
+                win32file.CloseHandle(pipe) 
+            else: 
+                pipe.write(message)
+                pipe.flush()
+                pass
+        
         
     def on_mount(self):        
         if (file is not None):
