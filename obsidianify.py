@@ -16,7 +16,6 @@ def push_to_obsidian(
         filename: name of the file with or without extension bruh
         base_url: API endpoint
     """
-
     if not filename.endswith('.md'):
         filename = f"{filename}.md"
 

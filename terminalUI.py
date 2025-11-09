@@ -2,7 +2,7 @@ from art import *
 from textual import on, work
 from textual_fspicker import FileOpen, SelectDirectory
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, VerticalScroll, Center, Middle, Grid, Container
+from textual.containers import Horizontal, Center, Middle, Grid, Container
 from textual.screen import Screen, ModalScreen
 from textual.binding import Binding
 from textual.timer import Timer
@@ -29,9 +29,6 @@ mrts: int = 4096
 temp: float = 0.5
 md_content: str = None
 
-# MARKDOWNCHAT = """/
-# > Yo chat this app cooks🧑‍🍳 up a pdf file and churns it out into some buttery🧈 markdown. You gots the option to peep🐤 it as is once converted or pop🥤 that croissant🥐 into your obsidian app!
-# """
 
 APP_DESCRIPTION_MARKDOWN = """
 Welcome to Summarizerr!
@@ -62,6 +59,9 @@ class MarkdownViewerScreen(Screen):
     ]
 
     def markdown_viewer(self): 
+        """
+        Returns a MarkdownViewer widget with the provided markdown content.
+        """
         global md_content 
         
         markdown_viewer = MarkdownViewer(markdown = md_content, show_table_of_contents=True)
@@ -69,16 +69,21 @@ class MarkdownViewerScreen(Screen):
         return markdown_viewer
 
     def compose(self) -> ComposeResult: 
+        """
+        A screen to view markdown content.
+        """
         yield Header()
         markdown_viewer = self.markdown_viewer()
         yield markdown_viewer
         yield Footer()
         
     def action_obsidian(self) -> None:
+        """
+        Handles the 'o' key action to push content to Obsidian.
+        """
         self.app.pop_screen()
         self.app.push_screen(ObsidianViewerScreen())
         
-
 class ObsidianViewerScreen(ModalScreen):
     global api_key
     global md_content
@@ -88,6 +93,9 @@ class ObsidianViewerScreen(ModalScreen):
     ]
 
     def compose(self) -> ComposeResult:
+        """
+        A screen to input Obsidian API key and filename to push content to Obsidian.
+        """
         yield Header()
         with Center():
             with Middle():
@@ -99,17 +107,16 @@ class ObsidianViewerScreen(ModalScreen):
     
     @on(Button.Pressed, "#confirm")
     def send_to_obsidian(self) -> None:
+        """
+        Handles the Confirm button press to push content to Obsidian.
+        """
         api_key = self.query_one('#apiBro').value
         file_name = self.query_one('#apiSis').value
         obsidianify.push_to_obsidian(api_key=api_key, content=md_content, filename=file_name)
         self.app.notify(f"Successfully pushed {file_name} to your obsidian vault!")
         self.app.pop_screen()
 
-class CompletionScreen(ModalScreen):
-    """
-    A textual component that displays a screen on terminal. Includes buttons to open MD on screen or to upload it to obsidian endpoint.
-    """
-    
+class CompletionScreen(ModalScreen):    
     BINDINGS = [
         Binding(key='escape', action='app.pop_screen()', description='Pop screen')
     ]
@@ -125,25 +132,36 @@ class CompletionScreen(ModalScreen):
     
     @on(Button.Pressed, "#obsidian")
     def handle_obsidian(self) -> None:
+        """
+        Handles the Obsidian button press to push content to Obsidian.
+        """
         self.app.pop_screen()
         self.app.push_screen(ObsidianViewerScreen())
 
     @on(Button.Pressed, "#local")
     def handle_local(self) -> None:
+        """
+        Handles the Preview Local button press to view markdown locally.
+        """
         self.app.pop_screen()
         self.app.push_screen(MarkdownViewerScreen())
 
     @on(Button.Pressed, "#cancel")
     def handle_cancel(self) -> None:
+        """
+        Handles the Cancel button press to close the completion screen.
+        """
         self.app.pop_screen()
 
 class RunnerMenu(Screen):
-    
     BINDINGS = [
         Binding(key='escape', action='app.pop_screen()', description='Pop screen')
     ]
     
     def compose(self) -> ComposeResult:
+        """
+        A textual component that displays a progress bar that fills up over our upload progress.
+        """
         yield Header()
         with Center():
             yield Grid(
@@ -183,6 +201,9 @@ class RunnerMenu(Screen):
         yield Footer()
     
     async def do_the_thing(self) -> None:
+        """
+        The main worker function that handles the PDF to markdown conversion, sending to model, and saving the response.
+        """
         global file
         global odir 
         global md_content
@@ -259,12 +280,15 @@ class RunnerMenu(Screen):
             
             message = "SUCCESS:Great job! 🔥🔥🔥🔥\n"
             
-            if (sys.platform == "win32"):
-                win32file.WriteFile(pipe, message.encode())
-                win32file.CloseHandle(pipe)
-            else:
-                pipe.write(message)
-                pipe.flush()
+            try: 
+                if (sys.platform == "win32"):
+                    win32file.WriteFile(pipe, message.encode())
+                    win32file.CloseHandle(pipe)
+                else:
+                    pipe.write(message)
+                    pipe.flush()
+            except Exception as e:
+                self.notify('oops, handle to the named pipe was lost. Did you close the fishing game?')
             
         except Exception as e:
             self.notify(f'Error occured during pdf processing, {e}')
@@ -272,14 +296,20 @@ class RunnerMenu(Screen):
 
             message = "FAILURE:Try again! 💀💀💀💀\n"
             
-            if (sys.platform == "win32"):
-                win32file.WriteFile(pipe, message.encode())
-                win32file.CloseHandle(pipe) 
-            else: 
-                pipe.write(message)
-                pipe.flush()
+            try: 
+                if (sys.platform == "win32"):
+                    win32file.WriteFile(pipe, message.encode())
+                    win32file.CloseHandle(pipe) 
+                else: 
+                    pipe.write(message)
+                    pipe.flush()
+            except Exception as e:
+                    self.notify('oops, handle to the named pipe was lost. Did you close the fishing game?')
         
-    def on_mount(self):        
+    def on_mount(self):   
+        """
+        Mounts the input file and output directory on screen.        
+        """     
         if (file is not None):
             self.query_one('#inputfile').update(str(file))
         if (odir is not None):
@@ -295,19 +325,25 @@ class StartMenu(Screen):
     ]
     
     def compose(self) -> ComposeResult:
+        """
+        A textual component that displays a start menu on terminal.
+        """
         yield Header()
         with Center():
             with Middle():
                 yield Static(f"{text2art('Summarizerr', font='Alligator')}", id="heading")
+                yield Label(id='inputfile')
+                yield Label(id='outputdir')
+                yield Rule()
                 yield Container(
-                    Label(id='inputfile'),
-                    Label(id='outputdir'),
                     Markdown(APP_DESCRIPTION_MARKDOWN, id="app_description")
                 )
         yield Footer()
-            
-    # @on(Button.Pressed, '#confirm')
+
     def action_start_conversion(self) -> None:
+        """
+        Starts the conversion process after checking if file and output directory are set.
+        """
         global file
         global odir 
         
@@ -323,8 +359,10 @@ class StartMenu(Screen):
             self.app.push_screen(RunnerMenu())
     
     @work 
-    # @on(Button.Pressed, '#ifile')
     async def action_open_ifile(self) -> None:
+        """
+        Opens a file picker to select the input file.
+        """
         global file 
          
         if opened := await self.app.push_screen_wait(FileOpen(must_exist=True)):
@@ -332,21 +370,24 @@ class StartMenu(Screen):
             self.query_one('#inputfile').update(str(opened))
         
     @work
-    # @on(Button.Pressed, '#odir')
     async def action_open_output_directory(self):
+        """"
+        Opens a directory picker to select the output directory.
+        """
         global odir 
         
         if opened := await self.app.push_screen_wait(SelectDirectory()):
             odir = str(opened)
             self.query_one("#outputdir").update(str(opened)) 
-    
+            
+    def on_mount(self):
+        if (file is not None): 
+            self.query_one('#inputfile').update(str(file))
+        if (odir is not None):
+            self.query_one('#outputdir').update(str(odir))
+
 
 class SummarizerApp(App[None]):
-    """
-    A Textual app to display a progress bar that fills up over our upload progress.
-    NOTE: Currently a mock implementation that fills the bar over time. 
-    """
-
     CSS_PATH = "style.tcss"
     BINDINGS = [
         Binding(key="q", action="exit", description="Quit the app"),
@@ -368,6 +409,9 @@ class SummarizerApp(App[None]):
         api_key = api_keyy or None
 
     def compose(self) -> ComposeResult:
+        """
+        A textual component that displays a header, footer, and main screen on terminal.
+         """
         yield Header()
         yield Footer()
         
@@ -375,13 +419,22 @@ class SummarizerApp(App[None]):
         global odir 
         
     def action_exit(self) -> None: 
+        """
+        Exits the application.
+        """
         self.exit()
         
     def action_back(self) -> None:
+        """
+        Goes back to the start menu.
+        """
         self.notify('Wassup')
         pass
             
     def on_mount(self) -> None:
+        """
+        Mounts the start menu on application start.
+        """
         self.title = "Summarizerr"
         self.sub_title = "Summarize your lectures"
         self.push_screen(StartMenu())

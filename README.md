@@ -9,10 +9,7 @@ Yo chat this app cooks🧑‍🍳 up a pdf file and churns it out into some butt
 | python | digital ocean |
 | rust | textual |
 
-## Infrastructure
-- 
-
-# run the source
+# Run the source
 
 1. Clone the repository
 
@@ -58,4 +55,8 @@ You can use this app to upload your lecture notes/course notes and summarize the
 ## Getting Started 
 - Click `i` to input the file that you want to summarize. 
 - Click `d` for output directory, this is where the summarized notes will be stored.
-- After summarization,
+- Click `s` to start the summarization process.
+- After summarization, you can open the summarized notes in Obsidian by clickin`Obsidian` button.
+- You can also view the summarized notes in the app by clicking the `Preview Local` button.
+
+
