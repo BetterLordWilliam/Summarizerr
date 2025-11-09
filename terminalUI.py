@@ -11,7 +11,13 @@ import asyncio
 import utility
 import time
 import obsidianify
-
+import os
+import pathlib
+import subprocess
+import tempfile
+import win32pipe
+import win32file
+import pywintypes
 
 file: str = None
 odir: str = None
@@ -67,10 +73,9 @@ class ObsidianViewerScreen(ModalScreen):
         api_key = self.query_one('#apiBro').value
         file_name = self.query_one('#apiSis').value
         obsidianify.push_to_obsidian(api_key=api_key, content=md_content, filename=file_name)
-        self.app.notify("Successfully pushed f{file_name} to your obsidian vault!")
+        self.app.notify(f"Successfully pushed {file_name} to your obsidian vault!")
         self.app.pop_screen()
 
-        
 class CompletionScreen(ModalScreen):
     """
     A textual component that displays a screen on terminal. Includes buttons to open MD on screen or to upload it to obsidian endpoint.
@@ -120,11 +125,13 @@ class RunnerMenu(Screen):
                 Container (
                     Label(id='inputfile'),
                     Label(id='outputdir'),
-                    Container(
-                        ProgressBar(id='converting', show_eta=False),
-                        Label(id='finished_converting'),
-                        id='converting_container'   
-                    ),
+                    Horizontal(
+                        Container(
+                            Container(
+                                ProgressBar(id='converting', show_eta=False),
+                                Label(id='finished_converting'),
+                                id='converting_container'   
+                            ),
                             Container(
                                 ProgressBar(id='modeling',show_eta=False),
                                 Label(id="finished_modeling"),
@@ -135,10 +142,12 @@ class RunnerMenu(Screen):
                                 Label(id="finished_writing"),
                                 id='writing_container'
                             ),
-                            id="left_column"
                         ),
-                        id="progress_grid"  
+                        id="left_column"
                     )
+                ),
+                id="progress_grid"  
+            )
         yield Footer()
     
     async def do_the_thing(self) -> None:
@@ -146,7 +155,25 @@ class RunnerMenu(Screen):
         global odir 
         global md_content
         
+        pipe_name = r'\\.\pipe\fisherman_signals'
+        
         try:
+            pipe = win32pipe.CreateNamedPipe(
+                pipe_name,
+                win32pipe.PIPE_ACCESS_DUPLEX,
+                win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
+                1, 65536, 65536, 0, None
+            )
+        except pywintypes.error as e:
+            self.notify(f'we failed to open the pipe, lost control {e}')
+            return
+        
+        cmd = f'start "Fisherman Game" cmd /c ".\\fisherman.exe --pipe {pipe_name}"' 
+        subprocess.Popen(cmd, shell=True)
+        
+        try:
+            win32pipe.ConnectNamedPipe(pipe, None) 
+            
             self.notify(file)
             self.notify(odir)
             
@@ -178,9 +205,17 @@ class RunnerMenu(Screen):
             self.app.pop_screen() 
             self.app.push_screen(CompletionScreen())
             
+            message = "SUCCESS:Great job! 🔥🔥🔥🔥\n"
+            win32file.WriteFile(pipe, message.encode())
+            win32file.CloseHandle(pipe) 
+            
         except Exception as e:
             self.notify(f'Error occured during pdf processing, {e}')
             self.app.pop_screen()
+            
+            message = "FAILURE:Try again! 💀💀💀💀\n"
+            win32file.WriteFile(pipe, message.encode())
+            win32file.CloseHandle(pipe) 
         
     def on_mount(self):        
         if (file is not None):

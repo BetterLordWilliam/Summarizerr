@@ -6,12 +6,6 @@
     height: 30%;
 }
 
-.box {
-    content-align: center middle;
-    border: solid green;
-    color: green;
-}
-
 CompletionScreen {
     align: center middle
 }
@@ -82,12 +76,4 @@ CompletionScreen {
 
 #apiSis {
     width: 150;
-}
-
-#apiBro {
-    width: 100%
-}
-
-#apiSis {
-    width: 100%
 }
