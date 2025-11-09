@@ -111,3 +111,5 @@ pythom main.py --file "/my/epic/file/path" --odir "/my/epic/directory/path"
 - Click `esc` to go back to the previous page
 - After summarization, you can open the summarized notes in Obsidian by clickin`Obsidian` button.
 - You can also view the summarized notes in the app by clicking the `Preview Local` button.
+
+![Ahahahaha you didn't say the magic word](./images/magic-word.gif)
