@@ -42,12 +42,13 @@ class CompletionScreen(Screen):
     """
     
     def compose(self) -> ComposeResult: 
-        yield Grid(
+        yield Container(
             Label("Completed!"),
-            Button("Obsidian", variant="primary", id="obsidian"),
-            Button("Preview Local", variant="primary", id="local"),
-            Button("Cancel", variant="primary", id="cancel"),
-            id="dialog"
+            Horizontal(
+                Button("Obsidian", variant="primary", id="obsidian"),
+                Button("Preview Local", variant="primary", id="local"),
+                Button("Cancel", variant="primary", id="cancel"),
+            ),
         )
     
     @on(Button.Pressed, "#obsidian")
