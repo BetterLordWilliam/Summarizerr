@@ -63,6 +63,8 @@ class ObsidianViewerScreen(ModalScreen):
         api_key = self.query_one('#apiBro').value
         file_name = self.query_one('#apiSis').value
         obsidianify.push_to_obsidian(api_key=api_key, content=md_content, filename=file_name)
+        self.app.notify("Successfully pushed ${file_name} to your obsidian vault!")
+        self.app.pop_screen()
 
         
 class CompletionScreen(ModalScreen):
