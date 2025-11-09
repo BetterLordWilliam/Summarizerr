@@ -1,6 +1,6 @@
 from textual import on, work
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, VerticalScroll, Center, Middle, Grid
+from textual.containers import Horizontal, VerticalScroll, Center, Middle, Grid, Container
 from textual.screen import Screen
 from textual.binding import Binding
 from textual.timer import Timer
@@ -67,7 +67,7 @@ class CompletionScreen(Screen):
         yield Grid(
             Label("Completed!"),
             Button("Obsidian", variant="primary", id="obsidian"),
-            Button("View Local", variant="primary", id="local"),
+            Button("Preview Local", variant="primary", id="local"),
             Button("Cancel", variant="primary", id="cancel"),
             id="dialog"
         )
@@ -85,6 +85,10 @@ class CompletionScreen(Screen):
         self.app.pop_screen()
 
 class MarkdownViewerScreen(Screen): 
+    BINDINGS = [
+        Binding(key="o", action="obsidian", description="Open obsidian")
+    ]
+
     def markdown_viewer(self): 
         markdown_viewer = MarkdownViewer(EXAMPLE_MARKDOWN, show_table_of_contents=True)
         markdown_viewer.code_indent_guides = False
@@ -93,44 +97,80 @@ class MarkdownViewerScreen(Screen):
     def compose(self) -> ComposeResult: 
         markdown_viewer = self.markdown_viewer()
         yield markdown_viewer
+        yield Footer()
 
 class Summarizerr(App[None]):
     CSS_PATH = "style.tcss"
 
     BINDINGS = [
         Binding(key="q", action="request_quit", description="Quit the app"),
+        Binding(key="s", action="start", description="Start the timer")
     ]
+
     progress_timer: Timer
-    
+
     def on_mount(self) -> None:
-        """Set up a timer to simulate progess happening."""
-        self.progress_timer = self.set_interval(1 / 10, self.make_progress, pause=True)
+        """Start the sequential progress animation."""
+        # hide all bars except the first, then start the tick timer
+        bars = list(self.query(ProgressBar))
+        for i, bar in enumerate(bars):
+            bar.update(progress=0)
+            bar.styles.display = "block" if i == 0 else "none"
+        # run _tick every 0.05s
+        self.progress_timer = self.set_interval(0.05, self._tick)
 
-    def make_progress(self) -> None:
-        """Called automatically to advance the progress bar."""
-        self.query_one(ProgressBar).advance(1)
+        # ensure first bar is visible
+        self.query_one("#bar1").styles.display = "block"
 
-    def action_start(self) -> None:
-        """Start the progress tracking."""
-        self.query_one(ProgressBar).update(total=10)
-        self.progress_timer.resume()
+        # store index state
+        self._current_index = 0
 
     def action_request_quit(self) -> None:
         self.push_screen(CompletionScreen())
 
     def compose(self) -> ComposeResult:
         yield Header()
-        # yield Static("Welcome to Summarizerr", classes="box")
-        # yield Horizontal(
-        #     Button("Default")
-        # )
-        # yield Footer()
 
         with Center():
             with Middle():
-                yield ProgressBar()
+                yield Container(
+                    ProgressBar(id="bar1"),
+                    ProgressBar(id="bar2"),
+                    ProgressBar(id="bar3"),
+                )
         yield Footer()
 
+    def _tick(self) -> None:
+        """Called periodically to advance the current progress bar. When it reaches 100, move to next."""
+        bars = list(self.query(ProgressBar))
+        if self._current_index >= len(bars):
+            # nothing left; stop timer
+            try:
+                self.progress_timer.stop()
+            except Exception:
+                pass
+            return
+
+        bar = bars[self._current_index]
+        # increment progress
+        new_progress = min(100, (bar.progress or 0) + 3)
+        bar.update(progress=new_progress)
+
+        if new_progress >= 100:
+            # hide finished bar
+            bar.styles.display = "none"
+            self._current_index += 1
+            if self._current_index < len(bars):
+                # show next bar and reset its progress
+                next_bar = bars[self._current_index]
+                next_bar.update(progress=0)
+                next_bar.styles.display = "block"
+            else:
+                # finished all bars; stop timer
+                try:
+                    self.progress_timer.stop()
+                except Exception:
+                    pass
         
 
 if __name__ == "__main__":
