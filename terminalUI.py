@@ -48,6 +48,10 @@ class ObsidianViewerScreen(ModalScreen):
     global api_key
     global md_content
 
+    BINDINGS = [
+        Binding(key='escape', action='app.pop_screen()', description='Pop screen')
+    ]
+
     def compose(self) -> ComposeResult:
         yield Header()
         with Center():
@@ -63,7 +67,7 @@ class ObsidianViewerScreen(ModalScreen):
         api_key = self.query_one('#apiBro').value
         file_name = self.query_one('#apiSis').value
         obsidianify.push_to_obsidian(api_key=api_key, content=md_content, filename=file_name)
-        self.app.notify("Successfully pushed ${file_name} to your obsidian vault!")
+        self.app.notify("Successfully pushed f{file_name} to your obsidian vault!")
         self.app.pop_screen()
 
         
@@ -183,9 +187,8 @@ class RunnerMenu(Screen):
             self.query_one('#inputfile').update(str(file))
         if (odir is not None):
             self.query_one('#outputdir').update(str(odir))
-            
+
         self.run_worker(self.do_the_thing)
-        
 
 class StartMenu(Screen):
     BINDINGS = [
