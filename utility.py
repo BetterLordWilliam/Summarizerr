@@ -2,6 +2,8 @@ from pymupdf4llm import to_markdown
 import requests as R
 import aiohttp
 import asyncio
+import aiofiles
+import pathlib
 import pathlib  as P
 
 SUMMARIZE_ENDPOINT  = 'https://summarizer.blindy.net/summarize'
@@ -37,7 +39,9 @@ async def send_md_to_model(md: str, tokens: int, temp: float) -> dict:
 
             return await resp.json()
 
-async def write_model_response(path: str, response: dict):
-    P.Path(path).write_bytes(response['summary'].encode())
-    # Path(kwargs['ofile']).write_bytes(md.encode())
-
+async def write_model_response(oldfile: str, path: str, md_content: str):
+    oldfilepath = pathlib.Path(oldfile)
+    oldfilename = oldfilepath.name.split('.')[0]
+    
+    async with aiofiles.open(f'{path}/{oldfilename}.md', mode='w') as file:
+        await file.write(md_content) 

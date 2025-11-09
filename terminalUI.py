@@ -22,12 +22,38 @@ import time
 #     model_response_result = await model_response
     
 #     file_write = asyncio.create_task(U.write_model_response(kwargs['ofile'], model_response_result))
-#     file_write_result = await file_write    
+#     file_write_result = await file_write   
+
+
+class MarkdownViewerScreen(Screen): 
+    # BINDING = [
+    #     Binding(key="o", action="obsidian", description="Open obsidian")
+    # ]
+    
+    def __init__(self, md_content: str, *args, **kwargs): 
+        super().__init__(*args, **kwargs)
+        self._md_content = md_content
+
+    def markdown_viewer(self): 
+        markdown_viewer = MarkdownViewer(self._md_content, show_table_of_contents=True)
+        markdown_viewer.code_indent_guides = False
+        return markdown_viewer
+
+    def compose(self) -> ComposeResult: 
+        yield Header()
+        markdown_viewer = self.markdown_viewer()
+        yield markdown_viewer
+        yield Footer()
 
 class CompletionScreen(Screen):
     """
     A textual component that displays a screen on terminal. Includes buttons to open MD on screen or to upload it to obsidian endpoint.
     """
+    def __init__(self, md_content: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._md_content = md_content
+        pass
+    
     def compose(self) -> ComposeResult: 
         yield Grid(
             Label("Completed!"),
@@ -38,16 +64,17 @@ class CompletionScreen(Screen):
         )
     
     @on(Button.Pressed, "#obsidian")
-    def handle_obsidian(self) -> None: 
+    def handle_obsidian(self) -> None:
         self.dismiss(True)
 
     @on(Button.Pressed, "#local")
-    def handle_local(self) -> None: 
-        self.app.switch_screen(MarkdownViewerScreen())
+    def handle_local(self) -> None:
+        self.app.switch_screen(MarkdownViewerScreen(md_content = self._md_content))
 
     @on(Button.Pressed, "#cancel")
-    def handle_cancel(self) -> None: 
+    def handle_cancel(self) -> None:
         self.app.pop_screen()
+
 
 class RunnerMenu(Screen):
     def __init__(self, file: str, odir: str, *args, **kwargs):
@@ -102,11 +129,12 @@ class RunnerMenu(Screen):
         
         self.notify('we are now saving the models response') 
         start = time.time()
-        file_write = asyncio.create_task(utility.write_model_response(self._odir, model_response_result))
-        file_write_result = await file_write  
+        file_write = asyncio.create_task(utility.write_model_response(self._file, self._odir, model_response_result['summary']))
+        file_write_result = await file_write
         end = time.time()
         self.notify(f'finished writing the models response to disk {end - start}')
-        self.app.push_screen(CompletionScreen())
+        
+        self.app.push_screen(CompletionScreen(md_content = model_response_result['summary']))
         
     
     def on_mount(self) -> None:        
@@ -116,27 +144,6 @@ class RunnerMenu(Screen):
             self.query_one('#outputdir').update(str(self._odir))
 
         self.run_worker(self.do_the_thing)
-
-    # def make_progress(self) -> None:
-    #     self.query_one(ProgressBar).advance(1)
-    
-    # def action_start(self) -> None:
-    #     self.query_one(ProgressBar).update(total=100)
-    #     self.progress_timer.resume()
-
-
-class MarkdownViewerScreen(Screen): 
-    def __init__(self, mdFile: str): 
-        self._mdFile = mdFile
-
-    def markdown_viewer(self): 
-        markdown_viewer = MarkdownViewer(self._mdFile, show_table_of_contents=True)
-        markdown_viewer.code_indent_guides = False
-        return markdown_viewer
-    
-    def compose(self) -> ComposeResult: 
-        markdown_viewer = self.markdown_viewer()
-        yield markdown_viewer
 
 
 class SummarizerApp(App[None]):
@@ -164,7 +171,6 @@ class SummarizerApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("Welcome to Summarizerr", id="main_title")
         with Center():
             with Middle():
                 yield Container(
@@ -203,14 +209,14 @@ class SummarizerApp(App[None]):
     @on(Button.Pressed, '#ifile')
     async def handle_ifile(self) -> None:
         if opened := await self.push_screen_wait(FileOpen(must_exist=True)):
-            self._file = opened
+            self._file = str(opened)
             self.query_one('#inputfile').update(str(opened))
         
     @work
     @on(Button.Pressed, '#odir')
     async def handle_odir(self):
         if opened := await self.push_screen_wait(SelectDirectory()):
-            self._odir = opened
+            self._odir = str(opened)
             self.query_one("#outputdir").update(str(opened)) 
             
     def on_mount(self) -> None:

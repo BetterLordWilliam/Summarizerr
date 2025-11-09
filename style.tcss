@@ -34,3 +34,15 @@ CompletionScreen {
     border: solid green;
     color: green;
 }
+
+Container {
+    border: solid green;
+}
+
+VerticalScroll {
+    border: solid blue;
+}
+
+Horizontal {
+    border: solid red;
+}
