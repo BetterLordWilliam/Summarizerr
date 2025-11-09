@@ -1,6 +1,14 @@
-# Description
+# Introduction (Our Story)
 
 Yo chat this app cooks🧑‍🍳 up a pdf file and churns it out into some buttery🧈 markdown. You gots the option to peep🐤 it as is once converted or pop🥤 that croissant🥐 into your obsidian app!
+
+Inconvenient slides? Use our app to vaporize and turn them into markdown that you can read (but probably wont). The tool even Obsidianifies these documents for you.
+
+Your welcome!
+
+Additionally you can play a cool fishing game while the model cooks
+
+Your welcome!
 
 # Technology
 
@@ -9,7 +17,7 @@ Yo chat this app cooks🧑‍🍳 up a pdf file and churns it out into some butt
 | python | digital ocean |
 | rust | textual |
 
-# Run the source
+# Run the Application
 
 1. Clone the repository
 
@@ -43,14 +51,11 @@ pythom main.py --file "/my/epic/file/path" --odir "/my/epic/directory/path"
 
 **done**
 
-# Use The Program as End User
-
-## Welcome to Summarizerr 
-You can use this app to upload your lecture notes/course notes and summarize them using our amazing Epic MCP server.
+# Application Instructions
 
 ## Requirements 
 - You will need your lecture notes. 
-- You will need Obsidian API. 
+- You will need Obsidian API. Also Obsidian (you don't need to connect to Obsidian).
 
 ## Getting Started 
 - Click `i` to input the file that you want to summarize. 
@@ -58,5 +63,3 @@ You can use this app to upload your lecture notes/course notes and summarize the
 - Click `s` to start the summarization process.
 - After summarization, you can open the summarized notes in Obsidian by clickin`Obsidian` button.
 - You can also view the summarized notes in the app by clicking the `Preview Local` button.
-
-
