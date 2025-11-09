@@ -42,11 +42,11 @@ async def main(**kwargs):
 if __name__ == '__main__':
     args = A.ArgumentParser('')
 
-    args.add_argument('--file',
+    args.add_argument('--filee',
                     type=str,
                     required=False,
                     help=INPUT_FILE_HELP)
-    args.add_argument('--ofile',
+    args.add_argument('--ofilee',
                     type=str,
                     required=False,
                     help=OUTPUT_FILE_HELP)

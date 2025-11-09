@@ -6,7 +6,8 @@ import aiofiles
 import pathlib
 import pathlib  as P
 
-SUMMARIZE_ENDPOINT  = 'https://summarizer.blindy.net/summarize'
+# SUMMARIZE_ENDPOINT  = 'https://summarizer.blindy.net/summarize'
+SUMMARIZE_ENDPOINT = 'https://tommye-summitless-nonamorously.ngrok-free.dev/summarize'
 MODEL_RESPONSE_BAD  = 'response from the model was absolutely cooked'
 
 async def to_markdown_async(filepath: str) -> str:

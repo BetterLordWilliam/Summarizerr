@@ -24,18 +24,22 @@ import time
 #     file_write = asyncio.create_task(U.write_model_response(kwargs['ofile'], model_response_result))
 #     file_write_result = await file_write   
 
+file: str = None
+odir: str = None
+mrts: int = 4096
+temp: float = 0.5
+md_content: str = None
+
 
 class MarkdownViewerScreen(Screen): 
     # BINDING = [
     #     Binding(key="o", action="obsidian", description="Open obsidian")
     # ]
-    
-    def __init__(self, md_content: str, *args, **kwargs): 
-        super().__init__(*args, **kwargs)
-        self._md_content = md_content
 
     def markdown_viewer(self): 
-        markdown_viewer = MarkdownViewer(self._md_content, show_table_of_contents=True)
+        global md_content 
+        
+        markdown_viewer = MarkdownViewer(markdown = md_content, show_table_of_contents=True)
         markdown_viewer.code_indent_guides = False
         return markdown_viewer
 
@@ -49,10 +53,6 @@ class CompletionScreen(Screen):
     """
     A textual component that displays a screen on terminal. Includes buttons to open MD on screen or to upload it to obsidian endpoint.
     """
-    def __init__(self, md_content: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._md_content = md_content
-        pass
     
     def compose(self) -> ComposeResult: 
         yield Grid(
@@ -69,19 +69,15 @@ class CompletionScreen(Screen):
 
     @on(Button.Pressed, "#local")
     def handle_local(self) -> None:
-        self.app.switch_screen(MarkdownViewerScreen(md_content = self._md_content))
+        self.app.switch_screen(MarkdownViewerScreen())
 
     @on(Button.Pressed, "#cancel")
     def handle_cancel(self) -> None:
         self.app.pop_screen()
+        self.app.pop_screen()
 
 
 class RunnerMenu(Screen):
-    def __init__(self, file: str, odir: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._file = file
-        self._odir = odir
-
     def compose(self) -> ComposeResult:
         yield Header()
         with Center(): 
@@ -109,13 +105,17 @@ class RunnerMenu(Screen):
         yield Footer()
     
     async def do_the_thing(self) -> None:
+        global file
+        global odir 
+        global md_content
+        
         try:
-            self.notify(self._file)
-            self.notify(self._odir)
+            self.notify(file)
+            self.notify(odir)
             
             self.notify('we are now converting from a pdf') 
             start = time.time()
-            md = asyncio.create_task(utility.to_markdown_async(self._file))
+            md = asyncio.create_task(utility.to_markdown_async(file))
             md_result = await md
             end = time.time()
             self.query_one(ProgressBar).update(total=100, progress=100)
@@ -123,30 +123,31 @@ class RunnerMenu(Screen):
             
             self.notify('we are now sending the converted pdf to epic model') 
             start = time.time()
-            model_response = asyncio.create_task(utility.send_md_to_model(md_result, 1024, 0.))
+            model_response = asyncio.create_task(utility.send_md_to_model(md_result, mrts, temp))
             model_response_result = await model_response
+            md_content = model_response_result['summary']
             end = time.time()
             self.query_one(ProgressBar).update(total=100, progress=100)
             self.notify(f'finished getting response from model {end - start}s')
             
             self.notify('we are now saving the models response') 
             start = time.time()
-            file_write = asyncio.create_task(utility.write_model_response(self._file, self._odir, model_response_result['summary']))
+            file_write = asyncio.create_task(utility.write_model_response(file, odir, md_content))
             file_write_result = await file_write
             end = time.time()
             self.query_one(ProgressBar).update(total=100, progress=100)
             self.notify(f'finished writing the models response to disk {end - start}')
             
-            self.app.push_screen(CompletionScreen(md_content = model_response_result['summary']))
+            self.app.push_screen(CompletionScreen())
         except Exception as e:
             self.notify(f'Error occured during pdf processing, {e}')
             self.app.pop_screen()
         
     def on_mount(self) -> None:        
-        if (self._file is not None):
-            self.query_one('#inputfile').update(str(self._file))
-        if (self._odir is not None):
-            self.query_one('#outputdir').update(str(self._odir))
+        if (file is not None):
+            self.query_one('#inputfile').update(str(file))
+        if (odir is not None):
+            self.query_one('#outputdir').update(str(odir))
 
         self.run_worker(self.do_the_thing)
 
@@ -166,30 +167,31 @@ class SummarizerApp(App[None]):
 
     progress_timer: Timer
     
-    def __init__(self, file: str, ofile: str, mrts: int, temp: float, *args, **kwargs):
+    def __init__(self, filee: str, ofilee: str, mrts: int, temp: float, *args, **kwargs):
+        """
+        Instances the global variables.
+        """
         super().__init__(*args, **kwargs)
+        global file
+        global odir
         
-        self._file = file or None
-        self._odir = ofile or None
-        self._mrts = mrts
-        self._temp = temp
+        file = filee or None
+        odir = ofilee or None
 
     def compose(self) -> ComposeResult:
         yield Header()
         with Center():
             with Middle():
                 yield Container(
-                    VerticalScroll(
-                        Label(id='inputfile'),
-                        Label(id='outputdir'),
-                        Horizontal(
-                            Button('Input file', id='ifile'),
-                            Button('Output directory', id='odir'),
-                        ), 
-                    ),
                     Horizontal(
-                        Button('Confirm', variant='primary', id='confirm'),
-                    )
+                        Button('Input file', id='ifile'),
+                        Label(id='inputfile'),
+                    ), 
+                    Horizontal(
+                        Button('Output directory', id='odir'),
+                        Label(id='outputdir'),
+                    ),
+                    Button('Confirm', variant='primary', id='confirm'),
                 )
         yield Footer()
 
@@ -199,36 +201,46 @@ class SummarizerApp(App[None]):
         
     @on(Button.Pressed, '#confirm')
     def confirm(self) -> None:
+        global file
+        global odir 
+        
         good = True 
-        if (self._file is None): 
+        if (file is None): 
             self.notify('You need a file')
             good = False
-        if (self._odir is None):
+        if (odir is None):
             self.notify('You need an output location')
             good = False
         if (good):
-            self.notify(f'{self._file}\n{self._odir}')
-            self.push_screen(RunnerMenu(file = self._file, odir = self._odir))
+            self.notify(f'{file}\n{odir}')
+            self.push_screen(RunnerMenu())
     
     @work 
     @on(Button.Pressed, '#ifile')
     async def handle_ifile(self) -> None:
+        global file 
+         
         if opened := await self.push_screen_wait(FileOpen(must_exist=True)):
-            self._file = str(opened)
+            file = str(opened)
             self.query_one('#inputfile').update(str(opened))
         
     @work
     @on(Button.Pressed, '#odir')
     async def handle_odir(self):
+        global odir 
+        
         if opened := await self.push_screen_wait(SelectDirectory()):
-            self._odir = str(opened)
+            odir = str(opened)
             self.query_one("#outputdir").update(str(opened)) 
             
     def on_mount(self) -> None:
+        global file
+        global odir 
+        
         self.title = "Summarizerr"
         self.sub_title = "Summarize your lectures"
 
-        if (self._file is not None):
-            self.query_one('#inputfile').update(str(self._file))
-        if (self._odir is not None):
-            self.query_one('#outputdir').update(str(self._odir))
+        if (file is not None):
+            self.query_one('#inputfile').update(str(file))
+        if (odir is not None):
+            self.query_one('#outputdir').update(str(odir))
