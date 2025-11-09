@@ -78,3 +78,7 @@ CompletionScreen {
 #apiSis {
     width: 150;
 }
+
+#app_description {
+    color: green;
+}

@@ -1,33 +1,61 @@
+# Description
+
+Yo chat this app cooks🧑‍🍳 up a pdf file and churns it out into some buttery🧈 markdown. You gots the option to peep🐤 it as is once converted or pop🥤 that croissant🥐 into your obsidian app!
+
+# Technology
+
+| Languages | Infrastructure |
+| :- | :- |
+| python | digital ocean |
+| rust | textual |
+
+## Infrastructure
+- 
+
 # run the source
 
-1. Turn on venv
+1. Clone the repository
+
+2. In the root create python venv
+
+```pwsh
+python -m venv .venv
+```
+
+3. Turn on venv
 ```pwsh
 ./.venv/Scripts/Activate
 ```
 
-2. Install requirements
+4. Install requirements
 ```pwsh
 pip install -r requirements.txt
 ```
 
-3. Profit
+5. Profit
 
-4. Run the program with python3
+6. Run the program with python3
 ```pwsh
 python main.py
 ```
 
-5. Run main with arguments
+7. Run main with arguments
 ```pwsh
 pythom main.py --file "/my/epic/file/path" --odir "/my/epic/directory/path"
 ```
 
 **done**
 
-# use the program as end user (dummy)
+# Use The Program as End User
 
-Not dummy because CLI but you know.
+## Welcome to Summarizerr 
+You can use this app to upload your lecture notes/course notes and summarize them using our amazing Epic MCP server.
 
-1. Download exe
-2. put exe into path (system or otherwise I don't care)
-3. Run (same as above)
+## Requirements 
+- You will need your lecture notes. 
+- You will need Obsidian API. 
+
+## Getting Started 
+- Click `i` to input the file that you want to summarize. 
+- Click `d` for output directory, this is where the summarized notes will be stored.
+- After summarization,

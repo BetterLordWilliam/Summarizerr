@@ -6,7 +6,7 @@ from textual.containers import Horizontal, VerticalScroll, Center, Middle, Grid,
 from textual.screen import Screen, ModalScreen
 from textual.binding import Binding
 from textual.timer import Timer
-from textual.widgets import Header, Footer, MarkdownViewer, Button, Static, ProgressBar, Label, Input, Rule
+from textual.widgets import Header, Footer, MarkdownViewer, Button, Static, ProgressBar, Label, Input, Rule, Markdown
 import asyncio
 import utility
 import time
@@ -29,10 +29,36 @@ mrts: int = 4096
 temp: float = 0.5
 md_content: str = None
 
+# MARKDOWNCHAT = """/
+# > Yo chat this app cooks🧑‍🍳 up a pdf file and churns it out into some buttery🧈 markdown. You gots the option to peep🐤 it as is once converted or pop🥤 that croissant🥐 into your obsidian app!
+# """
+
+APP_DESCRIPTION_MARKDOWN = """
+Welcome to Summarizerr!
+A tool to summarize your lecture PDFs using Epic Model.
+
+Features
+- Convert PDF lectures to Markdown
+- Summarize content using Epic Model
+- Preview summaries in terminal
+- Push summaries to Obsidian vaults
+
+Getting Started
+1. Click `i` to select your lecture PDF.
+2. Click `d` to choose an output directory.
+3. Click `s` to start the summarization process.
+4. Preview the summary or push it to your Obsidian vault.
+
+Requirements
+- Your Obsidian API key for pushing summaries.
+
+Enjoy summarizing your lectures with Summarizerr! 
+"""
 
 class MarkdownViewerScreen(Screen):    
     BINDINGS = [
-        Binding(key='escape', action='app.pop_screen()', description='Pop screen')
+        Binding(key='escape', action='app.pop_screen()', description='Pop screen'),
+        Binding(key='o', action='obsidian', description='Send to Obsidian')
     ]
 
     def markdown_viewer(self): 
@@ -47,6 +73,10 @@ class MarkdownViewerScreen(Screen):
         markdown_viewer = self.markdown_viewer()
         yield markdown_viewer
         yield Footer()
+        
+    def action_obsidian(self) -> None:
+        self.app.pop_screen()
+        self.app.push_screen(ObsidianViewerScreen())
         
 
 class ObsidianViewerScreen(ModalScreen):
@@ -260,7 +290,7 @@ class RunnerMenu(Screen):
 class StartMenu(Screen):
     BINDINGS = [
         Binding(key="i", action="open_ifile", description="Open source file"),
-        Binding(key="o", action="open_output_directory", description="Open target"),
+        Binding(key="d", action="open_output_directory", description="Open target"),
         Binding(key="s", action="start_conversion", description="Start conversion")
     ]
     
@@ -272,8 +302,8 @@ class StartMenu(Screen):
                 yield Container(
                     Label(id='inputfile'),
                     Label(id='outputdir'),
+                    Markdown(APP_DESCRIPTION_MARKDOWN, id="app_description")
                 )
-                # yield Button('Confirm', variant='primary', id='confirm')
         yield Footer()
             
     # @on(Button.Pressed, '#confirm')
