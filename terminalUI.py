@@ -186,7 +186,7 @@ class RunnerMenu(Screen):
                 
                 subprocess.Popen([
                     'x-terminal-emulator', '-e',
-                    'fisherman', '--pipe', pipe_path
+                    './fisherman', '--pipe', pipe_path
                 ])
                 
                 pipe = open(pipe_path, 'w')
