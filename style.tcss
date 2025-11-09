@@ -1,3 +1,11 @@
+#heading {
+    border: solid green;
+    color: green;
+    content-align: center middle;
+    text-style: italic;
+    height: 30%;
+}
+
 .box {
     content-align: center middle;
     border: solid green;
@@ -23,14 +31,23 @@ CompletionScreen {
     color: green;
 }
 
-Container {
-    border: solid green;
+#progress_grid {
+    grid-rows: 40% 1fr;
+    width: 100%;
+    align: center middle;
 }
 
-VerticalScroll {
-    border: solid blue;
+#left_column {
+    content-align: center middle;
+    padding: 1;
 }
 
-Horizontal {
-    border: solid red;
+#right_column {
+    content-align: center middle;
+    padding: 1;
+}
+
+#ascii_art {
+    content-align: center middle;
+    color: green;
 }

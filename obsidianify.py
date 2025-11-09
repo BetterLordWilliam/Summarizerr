@@ -38,7 +38,9 @@ def push_to_obsidian(
     )
 
     response.raise_for_status()
-    return response.json()
+    print(response)
+    
+    return response
 
 if __name__ == "__main__":
     import sys

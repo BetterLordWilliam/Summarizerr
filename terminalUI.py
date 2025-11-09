@@ -1,3 +1,4 @@
+from art import *
 from textual import on, work
 from textual_fspicker import FileOpen, SelectDirectory
 from textual.app import App, ComposeResult
@@ -9,6 +10,7 @@ from textual.widgets import Header, Footer, MarkdownViewer, Button, Static, Prog
 import asyncio
 import utility
 import time
+import obsidianify
 
 
 file: str = None
@@ -40,7 +42,29 @@ class MarkdownViewerScreen(Screen):
         markdown_viewer = self.markdown_viewer()
         yield markdown_viewer
         yield Footer()
+        
 
+class ObsidianViewerScreen(ModalScreen):
+    global api_key
+    global md_content
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Center():
+            with Middle():
+                yield Label("Obsidian Api Key:")
+                yield Input(placeholder="Your obsidian API Key", id='apiBro')
+                yield Input(placeholder="Your obsidian filename", id='apiSis')
+                yield Button("Confirm", variant="primary", id="confirm")
+        yield Footer()
+    
+    @on(Button.Pressed, "#confirm")
+    def send_to_obsidian(self) -> None:
+        api_key = self.query_one('#apiBro').value
+        file_name = self.query_one('#apiSis').value
+        obsidianify.push_to_obsidian(api_key=api_key, content=md_content, filename=file_name)
+
+        
 class CompletionScreen(ModalScreen):
     """
     A textual component that displays a screen on terminal. Includes buttons to open MD on screen or to upload it to obsidian endpoint.
@@ -51,14 +75,18 @@ class CompletionScreen(ModalScreen):
     ]
     
     def compose(self) -> ComposeResult: 
-        yield Label("Completed!")
-        yield Button("Obsidian", variant="primary", id="obsidian")
-        yield Button("Preview Local", variant="primary", id="local")
-        yield Button("Cancel", variant="primary", id="cancel")
+        yield Grid (
+            Label("Completed!"),
+            Button("Obsidian", variant="primary", id="obsidian"),
+            Button("Preview Local", variant="primary", id="local"),
+            Button("Cancel", variant="error", id="cancel"),
+            id="dialog"
+        )
     
     @on(Button.Pressed, "#obsidian")
     def handle_obsidian(self) -> None:
-        self.dismiss(True)
+        self.app.pop_screen()
+        self.app.push_screen(ObsidianViewerScreen())
 
     @on(Button.Pressed, "#local")
     def handle_local(self) -> None:
@@ -77,28 +105,34 @@ class RunnerMenu(Screen):
     
     def compose(self) -> ComposeResult:
         yield Header()
-        with Center(): 
-            with Middle():
-                yield Container(
+        with Center():
+            yield Grid(
+                Container (
+                    Static(f"{text2art('Loading...', font='Alligator')}", id='ascii_art'),
+                    id='right_column'
+                ),
+                Container (
                     Label(id='inputfile'),
                     Label(id='outputdir'),
-                    Rule(),
                     Container(
                         ProgressBar(id='converting', show_eta=False),
                         Label(id='finished_converting'),
-                        id='converting_container'
+                        id='converting_container'   
                     ),
-                    Container(
-                        ProgressBar(id='modeling',show_eta=False),
-                        Label(id="finished_modeling"),
-                        id='modeling_container'
-                    ),
-                    Container(
-                        ProgressBar(id='writing', show_eta=False),
-                        Label(id="finished_writing"),
-                        id='writing_container'
+                            Container(
+                                ProgressBar(id='modeling',show_eta=False),
+                                Label(id="finished_modeling"),
+                                id='modeling_container'
+                            ),
+                            Container(
+                                ProgressBar(id='writing', show_eta=False),
+                                Label(id="finished_writing"),
+                                id='writing_container'
+                            ),
+                            id="left_column"
+                        ),
+                        id="progress_grid"  
                     )
-                )
         yield Footer()
     
     async def do_the_thing(self) -> None:
@@ -149,8 +183,61 @@ class RunnerMenu(Screen):
             self.query_one('#outputdir').update(str(odir))
             
         self.run_worker(self.do_the_thing)
+        
 
-
+class StartMenu(Screen):
+    BINDINGS = [
+        Binding(key="i", action="open_ifile", description="Open source file"),
+        Binding(key="o", action="open_output_directory", description="Open target"),
+        Binding(key="s", action="start_conversion", description="Start conversion")
+    ] 
+    
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Center():
+            with Middle():
+                yield Static(f"{text2art('Summarizerr', font='Alligator')}", id="heading")
+                yield Container(
+                    Label(id='inputfile'),
+                    Label(id='outputdir'),
+                )
+                # yield Button('Confirm', variant='primary', id='confirm')
+        yield Footer()
+            
+    # @on(Button.Pressed, '#confirm')
+    def action_start_conversion(self) -> None:
+        global file
+        global odir 
+        
+        good = True 
+        if (file is None): 
+            self.notify('You need a file')
+            good = False
+        if (odir is None):
+            self.notify('You need an output location')
+            good = False
+        if (good):
+            self.notify(f'{file}\n{odir}')
+            self.app.push_screen(RunnerMenu())
+    
+    @work 
+    # @on(Button.Pressed, '#ifile')
+    async def action_open_ifile(self) -> None:
+        global file 
+         
+        if opened := await self.app.push_screen_wait(FileOpen(must_exist=True)):
+            file = str(opened)
+            self.query_one('#inputfile').update(str(opened))
+        
+    @work
+    # @on(Button.Pressed, '#odir')
+    async def action_open_output_directory(self):
+        global odir 
+        
+        if opened := await self.app.push_screen_wait(SelectDirectory()):
+            odir = str(opened)
+            self.query_one("#outputdir").update(str(opened)) 
+    
 
 class SummarizerApp(App[None]):
     """
@@ -159,12 +246,8 @@ class SummarizerApp(App[None]):
     """
 
     CSS_PATH = "style.tcss"
-    
-    
-
     BINDINGS = [
         Binding(key="q", action="exit", description="Quit the app"),
-        # Binding(key="c", action="confirm", description="Confirm choices")
     ]
 
     progress_timer: Timer
@@ -184,70 +267,19 @@ class SummarizerApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Center():
-            with Middle():
-                yield Container(
-                    Horizontal(
-                        Button('Input file', id='ifile'),
-                        Label(id='inputfile'),
-                    ), 
-                    Horizontal(
-                        Button('Output directory', id='odir'),
-                        Label(id='outputdir'),
-                    ),
-                    Button('Confirm', variant='primary', id='confirm'),
-                )
         yield Footer()
-
+        
+        global file
+        global odir 
+        
     def action_exit(self) -> None: 
         self.exit()
         
     def action_back(self) -> None:
         self.notify('Wassup')
         pass
-        
-    @on(Button.Pressed, '#confirm')
-    def confirm(self) -> None:
-        global file
-        global odir 
-        
-        good = True 
-        if (file is None): 
-            self.notify('You need a file')
-            good = False
-        if (odir is None):
-            self.notify('You need an output location')
-            good = False
-        if (good):
-            self.notify(f'{file}\n{odir}')
-            self.push_screen(RunnerMenu())
-    
-    @work 
-    @on(Button.Pressed, '#ifile')
-    async def handle_ifile(self) -> None:
-        global file 
-         
-        if opened := await self.push_screen_wait(FileOpen(must_exist=True)):
-            file = str(opened)
-            self.query_one('#inputfile').update(str(opened))
-        
-    @work
-    @on(Button.Pressed, '#odir')
-    async def handle_odir(self):
-        global odir 
-        
-        if opened := await self.push_screen_wait(SelectDirectory()):
-            odir = str(opened)
-            self.query_one("#outputdir").update(str(opened)) 
             
     def on_mount(self) -> None:
-        global file
-        global odir 
-        
         self.title = "Summarizerr"
         self.sub_title = "Summarize your lectures"
-
-        if (file is not None):
-            self.query_one('#inputfile').update(str(file))
-        if (odir is not None):
-            self.query_one('#outputdir').update(str(odir))
+        self.push_screen(StartMenu())
