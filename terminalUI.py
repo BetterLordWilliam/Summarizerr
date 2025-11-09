@@ -30,11 +30,7 @@ temp: float = 0.5
 md_content: str = None
 
 
-class MarkdownViewerScreen(Screen): 
-    # BINDING = [
-    #     Binding(key="o", action="obsidian", description="Open obsidian")
-    # ]
-    
+class MarkdownViewerScreen(Screen):    
     BINDINGS = [
         Binding(key='escape', action='app.pop_screen()', description='Pop screen')
     ]
@@ -131,16 +127,19 @@ class RunnerMenu(Screen):
                     Horizontal(
                         Container(
                             Container(
+                                Label("Converting to markdown", id="convertion_label"),
                                 ProgressBar(id='converting', show_eta=False),
                                 Label(id='finished_converting'),
                                 id='converting_container'   
                             ),
                             Container(
+                                Label("Sending the converted PDF to Epic Model", id="sending_model_label"),
                                 ProgressBar(id='modeling',show_eta=False),
                                 Label(id="finished_modeling"),
                                 id='modeling_container'
                             ),
                             Container(
+                                Label(f"Saving the Model's response", id="saving_model_label"),
                                 ProgressBar(id='writing', show_eta=False),
                                 Label(id="finished_writing"),
                                 id='writing_container'
@@ -197,30 +196,33 @@ class RunnerMenu(Screen):
             self.notify(file)
             self.notify(odir)
             
-            self.notify('we are now converting from a pdf') 
+            self.notify('Converting from a pdf') 
             start = time.time()
             md = asyncio.create_task(utility.to_markdown_async(file))
             md_result = await md
             end = time.time()
+            self.query_one("#convertion_label").update("Converted the PDF to markdown")
             self.query_one(ProgressBar).update(total=100, progress=100)
-            self.notify(f'finished converting from pdf, {end - start}s')
+            self.notify(f'Finshed converting from pdf, {end - start}s')
             
-            self.notify('we are now sending the converted pdf to epic model') 
+            self.notify('Sending the converted PDF to Epic Model') 
             start = time.time()
             model_response = asyncio.create_task(utility.send_md_to_model(md_result, mrts, temp))
             model_response_result = await model_response
             md_content = model_response_result['summary']
             end = time.time()
+            self.query_one("#sending_model_label").update("Converted PDF sent to the Epic Model")
             self.query_one(ProgressBar).update(total=100, progress=100)
-            self.notify(f'finished getting response from model {end - start}s')
+            self.notify(f'Finished getting response from model {end - start}s')
             
-            self.notify('we are now saving the models response') 
+            self.notify("Saving the Model's response") 
             start = time.time()
             file_write = asyncio.create_task(utility.write_model_response(file, odir, md_content))
             file_write_result = await file_write
             end = time.time()
+            self.query_one("#saving_model_label").update("Saved the Model's response")
             self.query_one(ProgressBar).update(total=100, progress=100)
-            self.notify(f'finished writing the models response to disk {end - start}')
+            self.notify(f'Finished writing the models response to disk {end - start}')
             
             self.app.pop_screen() 
             self.app.push_screen(CompletionScreen())
